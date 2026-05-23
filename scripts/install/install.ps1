@@ -6,6 +6,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+$Repository = if ([string]::IsNullOrWhiteSpace($env:CODEX_INSTALL_REPOSITORY)) { "limu6519/codex" } else { $env:CODEX_INSTALL_REPOSITORY }
+$ReleaseTagPrefix = if ([string]::IsNullOrWhiteSpace($env:CODEX_INSTALL_RELEASE_TAG_PREFIX)) { "internal-rust-v" } else { $env:CODEX_INSTALL_RELEASE_TAG_PREFIX }
+$ReleaseTagOverride = if ([string]::IsNullOrWhiteSpace($env:CODEX_INSTALL_RELEASE_TAG)) { "" } else { $env:CODEX_INSTALL_RELEASE_TAG }
 
 function Write-Step {
     param(
@@ -28,6 +31,10 @@ function Normalize-Version {
         return $RawVersion.Substring(6)
     }
 
+    if ($RawVersion.StartsWith("internal-rust-v")) {
+        return $RawVersion.Substring(15)
+    }
+
     if ($RawVersion.StartsWith("v")) {
         return $RawVersion.Substring(1)
     }
@@ -41,7 +48,8 @@ function Get-ReleaseUrl {
         [string]$ResolvedVersion
     )
 
-    return "https://github.com/SDGLBL/codex/releases/download/rust-v$ResolvedVersion/$AssetName"
+    $tagName = if ($ReleaseTagOverride) { $ReleaseTagOverride } else { "$ReleaseTagPrefix$ResolvedVersion" }
+    return "https://github.com/$Repository/releases/download/$tagName/$AssetName"
 }
 
 function Path-Contains {
@@ -70,7 +78,7 @@ function Resolve-Version {
         return $normalizedVersion
     }
 
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/SDGLBL/codex/releases/latest"
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repository/releases/latest"
     if (-not $release.tag_name) {
         Write-Error "Failed to resolve the latest Codex release version."
         exit 1

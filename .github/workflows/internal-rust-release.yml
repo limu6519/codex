@@ -50,7 +50,7 @@ jobs:
           internal_tag="${INPUT_INTERNAL_TAG:-}"
           publish="${INPUT_PUBLISH:-true}"
 
-          if [[ ! "${upstream_tag}" =~ ^rust-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! "${upstream_tag}" =~ ^rust-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
             echo "unexpected upstream tag format: ${upstream_tag}" >&2
             exit 1
           fi
