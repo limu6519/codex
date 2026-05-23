@@ -335,7 +335,7 @@ jobs:
           target_commitish: ${{ needs.meta.outputs.release_ref }}
           body_path: ${{ steps.notes.outputs.path }}
           files: dist/**
-          prerelease: false
+          prerelease: ${{ contains(needs.meta.outputs.version, '-') }}
 
       - name: Upload dry-run bundle
         if: ${{ needs.meta.outputs.publish != 'true' }}
