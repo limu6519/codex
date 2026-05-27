@@ -3,6 +3,9 @@
 set -eu
 
 RELEASE="latest"
+REPOSITORY="${CODEX_INSTALL_REPOSITORY:-limu6519/codex}"
+RELEASE_TAG="${CODEX_INSTALL_RELEASE_TAG:-}"
+RELEASE_TAG_PREFIX="${CODEX_INSTALL_RELEASE_TAG_PREFIX:-internal-rust-v}"
 
 BIN_DIR="${CODEX_INSTALL_DIR:-$HOME/.local/bin}"
 BIN_PATH="$BIN_DIR/codex"
@@ -36,6 +39,9 @@ normalize_version() {
       ;;
     rust-v*)
       printf '%s\n' "${1#rust-v}"
+      ;;
+    internal-rust-v*)
+      printf '%s\n' "${1#internal-rust-v}"
       ;;
     v*)
       printf '%s\n' "${1#v}"
@@ -110,14 +116,26 @@ download_text() {
 release_url_for_asset() {
   asset="$1"
   resolved_version="$2"
+  release_tag="$(release_tag_for_version "$resolved_version")"
 
-  printf 'https://github.com/openai/codex/releases/download/rust-v%s/%s\n' "$resolved_version" "$asset"
+  printf 'https://github.com/%s/releases/download/%s/%s\n' "$REPOSITORY" "$release_tag" "$asset"
 }
 
 release_metadata_url() {
   resolved_version="$1"
+  release_tag="$(release_tag_for_version "$resolved_version")"
 
-  printf 'https://api.github.com/repos/openai/codex/releases/tags/rust-v%s\n' "$resolved_version"
+  printf 'https://api.github.com/repos/%s/releases/tags/%s\n' "$REPOSITORY" "$release_tag"
+}
+
+release_tag_for_version() {
+  resolved_version="$1"
+
+  if [ -n "$RELEASE_TAG" ]; then
+    printf '%s\n' "$RELEASE_TAG"
+  else
+    printf '%s%s\n' "$RELEASE_TAG_PREFIX" "$resolved_version"
+  fi
 }
 
 release_asset_digest_or_empty() {
@@ -265,8 +283,8 @@ resolve_version() {
     return
   fi
 
-  release_json="$(download_text "https://api.github.com/repos/openai/codex/releases/latest")"
-  resolved="$(printf '%s\n' "$release_json" | sed -n 's/.*"tag_name":[[:space:]]*"rust-v\([^"]*\)".*/\1/p' | head -n 1)"
+  release_json="$(download_text "https://api.github.com/repos/$REPOSITORY/releases/latest")"
+  resolved="$(printf '%s\n' "$release_json" | sed -n 's/.*"tag_name":[[:space:]]*"\(internal-\)\{0,1\}rust-v\([^"]*\)".*/\2/p' | head -n 1)"
 
   if [ -z "$resolved" ]; then
     echo "Failed to resolve the latest Codex release version." >&2
