@@ -6,6 +6,7 @@ RELEASE="latest"
 REPOSITORY="${CODEX_INSTALL_REPOSITORY:-limu6519/codex}"
 RELEASE_TAG="${CODEX_INSTALL_RELEASE_TAG:-}"
 RELEASE_TAG_PREFIX="${CODEX_INSTALL_RELEASE_TAG_PREFIX:-internal-rust-v}"
+GITHUB_AUTH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 
 BIN_DIR="${CODEX_INSTALL_DIR:-$HOME/.local/bin}"
 BIN_PATH="$BIN_DIR/codex"
@@ -83,12 +84,20 @@ download_file() {
   output="$2"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url" -o "$output"
+    if [ -n "$GITHUB_AUTH_TOKEN" ]; then
+      curl -fsSL -H "Authorization: Bearer $GITHUB_AUTH_TOKEN" "$url" -o "$output"
+    else
+      curl -fsSL "$url" -o "$output"
+    fi
     return
   fi
 
   if command -v wget >/dev/null 2>&1; then
-    wget -q -O "$output" "$url"
+    if [ -n "$GITHUB_AUTH_TOKEN" ]; then
+      wget -q --header="Authorization: Bearer $GITHUB_AUTH_TOKEN" -O "$output" "$url"
+    else
+      wget -q -O "$output" "$url"
+    fi
     return
   fi
 
@@ -100,12 +109,20 @@ download_text() {
   url="$1"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url"
+    if [ -n "$GITHUB_AUTH_TOKEN" ]; then
+      curl -fsSL -H "Authorization: Bearer $GITHUB_AUTH_TOKEN" "$url"
+    else
+      curl -fsSL "$url"
+    fi
     return
   fi
 
   if command -v wget >/dev/null 2>&1; then
-    wget -q -O - "$url"
+    if [ -n "$GITHUB_AUTH_TOKEN" ]; then
+      wget -q --header="Authorization: Bearer $GITHUB_AUTH_TOKEN" -O - "$url"
+    else
+      wget -q -O - "$url"
+    fi
     return
   fi
 
